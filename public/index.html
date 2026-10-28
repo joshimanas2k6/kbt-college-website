@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+            background: #f2f2f2;
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: navy;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Student Management System</h2>
+
+    <form id="studentForm" onsubmit="addStudent(event)">
+        <input type="number" id="roll" placeholder="Roll No" required>
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="text" id="course" placeholder="Course" required>
+        <button type="submit">Add Student</button>
+    </form>
+
+    <button type="button" onclick="searchStudent()">Search</button>
+    <button type="button" onclick="updateStudent()">Update Student</button>
+    <button type="button" onclick="deleteStudent()">Delete Student</button>
+    <button type="button" onclick="loadStudents()">Show All</button>
+
+    <h3>Student Records</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Roll No</th>
+                <th>Name</th>
+                <th>Course</th>
+            </tr>
+        </thead>
+        <tbody id="records"></tbody>
+    </table>
+
+    <script>
+        // ADD STUDENT
+        async function addStudent(event) {
+            event.preventDefault();
+
+            let student = {
+                rollNo: Number(document.getElementById("roll").value),
+                name: document.getElementById("name").value,
+                course: document.getElementById("course").value
+            };
+
+            let response = await fetch("/students", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(student)
+            });
+
+            if (response.ok) {
+                alert("Student Added");
+                document.getElementById("studentForm").reset();
+                loadStudents();
+            } else {
+                alert("Student not added. Check the roll number.");
+            }
+        }
+
+        // SHOW ALL STUDENTS
+        async function loadStudents() {
+            let response = await fetch("/students");
+            let students = await response.json();
+            showStudents(students);
+        }
+
+        // DISPLAY STUDENTS IN TABLE
+        function showStudents(students) {
+            let table = document.getElementById("records");
+            table.innerHTML = "";
+
+            for (let s of students) {
+                let row = table.insertRow();
+                row.insertCell().textContent = s.rollNo;
+                row.insertCell().textContent = s.name;
+                row.insertCell().textContent = s.course;
+            }
+        }
+
+        // SEARCH STUDENT BY ROLL NUMBER
+        async function searchStudent() {
+            let roll = document.getElementById("roll").value;
+
+            if (roll === "") {
+                alert("Enter Roll No");
+                return;
+            }
+
+            let response = await fetch("/students/" + roll);
+
+            if (response.ok) {
+                let student = await response.json();
+                showStudents([student]);
+            } else {
+                alert("Student Not Found");
+            }
+        }
+
+        // UPDATE STUDENT DETAILS
+        async function updateStudent() {
+            let roll = document.getElementById("roll").value;
+            let name = document.getElementById("name").value;
+            let course = document.getElementById("course").value;
+
+            if (roll === "" || name === "" || course === "") {
+                alert("Enter Roll No, Name and Course");
+                return;
+            }
+
+            let response = await fetch("/students/" + roll, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: name, course: course })
+            });
+
+            if (response.ok) {
+                alert("Student Updated");
+                loadStudents();
+            } else {
+                alert("Student Not Found");
+            }
+        }
+
+        // DELETE STUDENT BY ROLL NUMBER
+        async function deleteStudent() {
+            let roll = document.getElementById("roll").value;
+
+            if (roll === "") {
+                alert("Enter Roll No");
+                return;
+            }
+
+            if (!confirm("Delete this student?")) {
+                return;
+            }
+
+            let response = await fetch("/students/" + roll, {
+                method: "DELETE"
+            });
+
+            if (response.ok) {
+                alert("Student Deleted");
+                loadStudents();
+            } else {
+                alert("Student Not Found");
+            }
+        }
+
+        // LOAD RECORDS WHEN PAGE OPENS
+        loadStudents();
+    </script>
+
+</body>
+</html>
